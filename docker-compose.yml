@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Serviço 1: O Banco de Dados relacional PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: edu_postgres_db
+    environment:
+      - POSTGRES_DB=edu_analytics
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=Luc1An475
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Serviço 2: A nossa API Django
+  api:
+    build: .
+    container_name: django_api_container
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=django-insecure-chave-de-teste-ecossistema-integrado-2026
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
