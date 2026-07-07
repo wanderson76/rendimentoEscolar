@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Evita que o Python grave ficheiros .pyc no disco
 ENV PYTHONDONTWRITEBYTECODE 1

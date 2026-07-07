@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduAnalytica • Painel do Aluno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        background-color: #080b11;
+        color: #f3f4f6;
+      }
+      .dark-card {
+        background-color: #0f1622;
+        border: 1px solid #1e293b;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased pb-12">
+    <header
+      class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+    >
+      <div>
+        <h1 class="text-2xl font-bold text-purple-500 flex items-center gap-2">
+          EduAnalytica
+          <span class="text-gray-400 font-light text-xl"
+            >• Painel do Aluno</span
+          >
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">
+          Análise preditiva e monitoramento de rendimento escolar.
+        </p>
+      </div>
+      <div>
+        <select
+          class="bg-slate-900 border border-slate-700 text-sm rounded-lg px-4 py-2 text-gray-300 focus:outline-none focus:border-purple-500"
+        >
+          <option>2º ANO C - WALKIR VERGANI</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8 space-y-6">
+      <div
+        class="dark-card p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg"
+      >
+        <div>
+          <span
+            class="text-xs font-semibold text-purple-400 uppercase tracking-wider"
+            >Estudante em Análise</span
+          >
+          <h2
+            class="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1"
+          >
+            {{ aluno.nome }}
+          </h2>
+          <div class="flex gap-4 mt-2 text-sm text-gray-400">
+            <p>
+              Matrícula:
+              <span class="text-gray-200 font-mono"
+                >{{ aluno.matricula|default:"N/A" }}</span
+              >
+            </p>
+            <p>
+              Situação:
+              <span
+                class="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-400 border border-green-500/20"
+                >{{ aluno.situacao }}</span
+              >
+            </p>
+          </div>
+        </div>
+        <a
+          href="/admin/escola/aluno/"
+          class="text-sm bg-slate-800 hover:bg-slate-700 text-gray-300 px-4 py-2 rounded-lg transition-colors border border-slate-700 whitespace-nowrap"
+        >
+          ← Voltar para Lista
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div
+          class="dark-card p-6 rounded-xl lg:col-span-2 shadow-lg flex flex-col"
+        >
+          <div class="mb-4">
+            <h3 class="text-lg font-bold text-white">
+              📊 Desempenho por Componente Curricular
+            </h3>
+            <p class="text-xs text-gray-400">
+              Comparativo de evolução de médias reais entre o 1º e o 2º
+              Bimestre.
+            </p>
+          </div>
+          <div class="relative w-full h-80 sm:h-96">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+
+        <div class="dark-card p-6 rounded-xl shadow-lg flex flex-col">
+          <div class="mb-4">
+            <h3 class="text-lg font-bold text-white">
+              🕸️ Perfil de Notas Cruzadas
+            </h3>
+            <p class="text-xs text-gray-400">
+              Visão multidimensional do aproveitamento do aluno.
+            </p>
+          </div>
+          <div
+            class="relative w-full h-80 sm:h-96 flex items-center justify-center"
+          >
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const labelsOriginal = {{ labels_disciplinas|safe }};
+      const notasB1 = {{ notas_b1|safe }}.map(v => v === null ? 0 : Number(v));
+      const notasB2 = {{ notas_b2|safe }}.map(v => v === null ? 0 : Number(v));
+
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = 'ui-sans-serif, system-ui, sans-serif';
+
+      // 1. Gráfico de Barras
+      const ctxBar = document.getElementById('barChart').getContext('2d');
+      new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+              labels: labelsOriginal.map(label => label.length > 15 ? label.substring(0, 15) + '...' : label),
+              datasets: [
+                  { label: '1º Bimestre', data: notasB1, backgroundColor: '#3b82f6', borderRadius: 4 },
+                  { label: '2º Bimestre', data: notasB2, backgroundColor: '#10b981', borderRadius: 4 }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'top', labels: { color: '#f3f4f6' } } },
+              scales: {
+                  x: { grid: { color: '#1e293b' }, ticks: { maxRotation: 45, minRotation: 45 } },
+                  y: { min: 0, max: 10, grid: { color: '#1e293b' }, ticks: { stepSize: 1 } }
+              }
+          }
+      });
+
+      // 2. Gráfico de Radar
+      const ctxRadar = document.getElementById('radarChart').getContext('2d');
+      new Chart(ctxRadar, {
+          type: 'radar',
+          data: {
+              labels: labelsOriginal.map(l => l.length > 10 ? l.substring(0, 10) + '..' : l),
+              datasets: [
+                  { label: '1º Bimestre', data: notasB1, backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: '#3b82f6', pointBackgroundColor: '#3b82f6', pointRadius: 3 },
+                  { label: '2º Bimestre', data: notasB2, backgroundColor: 'rgba(16, 185, 129, 0.12)', borderColor: '#10b981', pointBackgroundColor: '#10b981', pointRadius: 3 }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'top', labels: { color: '#f3f4f6' } } },
+              scales: {
+                  r: {
+                      min: 0, max: 10,
+                      grid: { color: '#1e293b' },
+                      angleLines: { color: '#1e293b' },
+                      pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                      ticks: { stepSize: 2, display: true, backdropColor: 'transparent', color: '#64748b' }
+                  }
+              }
+          }
+      });
+    </script>
+    <script>
+      // Isso desativa o aviso chato no console local
+      tailwind.config = {
+        production: true,
+      };
+    </script>
+  </body>
+</html>

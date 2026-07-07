@@ -15,18 +15,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+# rendimentoEscolar/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from escola.views import AlunoViewSet, MetricaDesempenhoViewSet
-
-# O Router do DRF cria as rotas padrão de forma automática
-router = DefaultRouter()
-router.register(r"alunos", AlunoViewSet)
-router.register(r"metricas", MetricaDesempenhoViewSet)
+from escola.views import dashboard_aluno  # Mantendo seus imports existentes
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Todas as rotas da API começam com api/v1/
-    path("api/v1/", include(router.urls)),
+    # Inclui as rotas do aplicativo escola
+    path("", include("escola.urls")),
+    # Sua rota individual (exemplo com base no seu print de tela)
+    path("dashboard/<int:aluno_id>/", dashboard_aluno, name="dashboard_aluno"),
 ]

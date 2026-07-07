@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduAnalytica • Visão Macro da Turma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Desativa o aviso de CDN em desenvolvimento do Tailwind
+      tailwind.config = {
+        production: true,
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        background-color: #080b11;
+        color: #f3f4f6;
+      }
+      .dark-card {
+        background-color: #0f1622;
+        border: 1px solid #1e293b;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased pb-12">
+    <header
+      class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+    >
+      <div>
+        <h1 class="text-2xl font-bold text-white uppercase tracking-wide">
+          Visão Geral da Turma
+          <span class="text-purple-500 font-light text-xl">• 2ª Série C</span>
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">
+          Comparativo de evolução interna e cruzamento com a média estadual do
+          SARESP.
+        </p>
+      </div>
+      <div>
+        <a
+          href="/"
+          class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm text-gray-300 font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap"
+        >
+          ← Voltar para Lista
+        </a>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8 space-y-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="dark-card p-6 rounded-xl shadow-lg lg:col-span-2">
+          <h3 class="text-lg font-bold text-white mb-1">
+            📊 Desempenho por Componente Curricular
+          </h3>
+          <p class="text-xs text-gray-400 mb-6">
+            Comparativo de evolução de médias reais entre o 1º e o 2º Bimestre.
+          </p>
+          <div class="h-80 relative w-full">
+            <canvas id="graficoBarrasTurma"></canvas>
+          </div>
+        </div>
+
+        <div class="dark-card p-6 rounded-xl shadow-lg">
+          <h3 class="text-lg font-bold text-white mb-1">
+            🎯 Radar de Defasagem (SARESP)
+          </h3>
+          <p class="text-xs text-gray-400 mb-6">
+            Régua do Estado vs Média Atual da Turma no 2º Bimestre.
+          </p>
+          <div class="h-80 relative w-full flex items-center justify-center">
+            <canvas id="graficoRadarSaresp"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="dark-card rounded-xl shadow-lg overflow-hidden mt-8">
+        <div class="p-6 border-b border-slate-800">
+          <h3 class="text-lg font-bold text-white">
+            📋 Matriz de Desempenho e Indicadores
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr
+                class="border-b border-slate-800 text-slate-400 text-xs uppercase bg-slate-900/50 whitespace-nowrap"
+              >
+                <th class="p-4">Componente Curricular</th>
+                <th class="p-4 text-center">Média 1ºB</th>
+                <th class="p-4 text-center">Média 2ºB</th>
+                <th class="p-4 text-center">Meta Estado</th>
+                <th class="p-4 text-center">Desvio</th>
+                <th class="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-sm">
+              {% for item in tabela_performance %}
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-4 font-medium text-gray-200">
+                  {{ item.disciplina }}
+                </td>
+                <td class="p-4 text-center font-mono text-blue-400">
+                  {{ item.media_1b|default:"0.0"|floatformat:1 }}
+                </td>
+                <td class="p-4 text-center font-mono text-emerald-400">
+                  {{ item.media_2b|default:"0.0"|floatformat:1 }}
+                </td>
+                <td class="p-4 text-center font-mono text-gray-400">
+                  {{ item.media_estado_saresp|default:"6.0"|floatformat:1 }}
+                </td>
+                <td
+                  class="p-4 text-center font-mono {% if item.desvio_estratetigo >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}"
+                >
+                  {% if item.desvio_estratetigo > 0 %}+{% endif %}{{
+                  item.desvio_estratetigo|floatformat:1 }}
+                </td>
+                <td class="p-4">
+                  <span
+                    class="px-2.5 py-1 rounded-full text-xs font-semibold {% if item.desvio_estratetigo >= 0 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-red-500/10 text-red-400 border border-red-500/20{% endif %}"
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="p-8 text-center text-gray-500 text-sm">
+                  Nenhum dado pedagógico registrado para esta turma.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const labelsDisciplinas = [
+          {% for item in tabela_performance %}"{{ item.disciplina }}",{% endfor %}
+      ];
+      const dados1B = [
+          {% for item in tabela_performance %}{{ item.media_1b|default:"0.0"|stringformat:".1f"|cut:"," }},{% endfor %}
+      ];
+      const dados2B = [
+          {% for item in tabela_performance %}{{ item.media_2b|default:"0.0"|stringformat:".1f"|cut:"," }},{% endfor %}
+      ];
+      const dadosSaresp = [
+          {% for item in tabela_performance %}{{ item.media_estado_saresp|default:"6.0"|stringformat:".1f"|cut:"," }},{% endfor %}
+      ];
+
+      Chart.defaults.color = '#94a3b8';
+
+      // 1. Gráfico de Barras Agrupadas
+      const ctxBarras = document.getElementById('graficoBarrasTurma').getContext('2d');
+      new Chart(ctxBarras, {
+          type: 'bar',
+          data: {
+              labels: labelsDisciplinas.map(d => d.length > 15 ? d.substring(0, 15) + '...' : d),
+              datasets: [
+                  { label: '1º Bimestre', data: dados1B, backgroundColor: '#3b82f6', borderRadius: 4 },
+                  { label: '2º Bimestre', data: dados2B, backgroundColor: '#10b981', borderRadius: 4 }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { labels: { color: '#94a3b8' } } },
+              scales: {
+                  x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                  y: { min: 0, max: 10, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+              }
+          }
+      });
+
+      // 2. Gráfico de Radar (Média da Turma vs Estado)
+      const ctxRadar = document.getElementById('graficoRadarSaresp').getContext('2d');
+      new Chart(ctxRadar, {
+          type: 'radar',
+          data: {
+              labels: labelsDisciplinas.map(d => d.length > 10 ? d.substring(0, 10) + '..' : d),
+              datasets: [
+                  { label: 'Média Turma (2ºB)', data: dados2B, backgroundColor: 'rgba(168, 85, 247, 0.15)', borderColor: '#a855f7', pointBackgroundColor: '#a855f7' },
+                  { label: 'Régua Estado', data: dadosSaresp, backgroundColor: 'rgba(148, 163, 184, 0.05)', borderColor: '#94a3b8', borderDash: [5, 5], pointBackgroundColor: '#94a3b8' }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { labels: { color: '#94a3b8' } } },
+              scales: {
+                  r: {
+                      angleLines: { color: '#1e293b' },
+                      grid: { color: '#1e293b' },
+                      pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                      ticks: { color: '#94a3b8', backdropColor: 'transparent', stepSize: 2 },
+                      min: 0, max: 10
+                  }
+              }
+          }
+      });
+    </script>
+  </body>
+</html>
