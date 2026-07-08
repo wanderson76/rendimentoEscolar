@@ -43,6 +43,13 @@ class BoletimBimestral(models.Model):
                 name="unique_boletim_aluno_disciplina_bimestre",
             )
         ]
+        # INTERVENÇÃO DE PERFORMANCE NO POSTGRESQL
+        indexes = [
+            # Turbina buscas micro de boletins de um aluno específico
+            models.Index(fields=["aluno", "disciplina", "bimestre"]),
+            # Turbina agregações dinâmicas macro (Média de notas e soma de faltas por matéria)
+            models.Index(fields=["disciplina", "bimestre"]),
+        ]
 
     def __str__(self):
         return f"{self.aluno.nome} - {self.disciplina.nome} ({self.bimestre}ºB)"
@@ -115,6 +122,9 @@ class IntervencaoPedagogica(models.Model):
     class Meta:
         verbose_name = "Intervenção Pedagógica"
         verbose_name_plural = "Intervenções Pedagógicas"
+        indexes = [
+            models.Index(fields=["status"]),
+        ]
 
     def __str__(self):
         return f"Intervenção: {self.aluno.nome} - {self.disciplina.nome} ({self.get_status_display()})"
@@ -138,6 +148,16 @@ class MetricaDesempenho(models.Model):
     class Meta:
         verbose_name = "Métrica de Desempenho"
         verbose_name_plural = "Métricas de Desempenho"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["aluno", "disciplina"],
+                name="unique_metricas_aluno_disciplina",
+            )
+        ]
+        indexes = [
+            # Otimiza o filtro .filter(disciplina__iexact=...) do gráfico radar
+            models.Index(fields=["disciplina"]),
+        ]
 
     def __str__(self):
         return f"{self.aluno.nome} - {self.disciplina.nome}: {self.nota}"

@@ -26,4 +26,6 @@ urlpatterns = [
     path("", include("escola.urls")),
     # Sua rota individual (exemplo com base no seu print de tela)
     path("dashboard/<int:aluno_id>/", dashboard_aluno, name="dashboard_aluno"),
+    # CONECTA O APP ALUNOS AO PROJETO
+    path("alunos/", include("alunos.urls")),
 ]
