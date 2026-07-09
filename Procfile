@@ -1,0 +1,1 @@
+web: gunicorn rendimentoEscolar.wsgi --log-file -
