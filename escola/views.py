@@ -16,8 +16,20 @@ from .services import extrair_alertas_intervencao
 
 
 def dashboard_aluno(request, aluno_id):
-    # Proteção: Se o aluno não existir, retorna 404 limpo em vez de quebrar com Erro 500
+    """
+    Renderiza o dashboard individual do aluno com dados estruturados para o Chart.js
+    e suporte a paginação sequencial (Avançar/Recuar).
+    """
+    # Proteção: Se o aluno não existir, retorna 404 limpo
     aluno = get_object_or_404(Aluno, id=aluno_id)
+
+    # ⏭️ Motor de Paginação Sequencial (Apenas alunos com situação Ativo)
+    aluno_anterior = (
+        Aluno.objects.filter(id__lt=aluno_id, situacao="Ativo").order_by("-id").first()
+    )
+    aluno_proximo = (
+        Aluno.objects.filter(id__gt=aluno_id, situacao="Ativo").order_by("id").first()
+    )
 
     # Otimização: Traz todos os boletins necessários em uma única consulta ao banco
     boletins = BoletimBimestral.objects.filter(aluno=aluno).select_related("disciplina")
@@ -31,7 +43,7 @@ def dashboard_aluno(request, aluno_id):
     notas_b2 = []
     engajamento = []
 
-    # Organiza os dados em memória (evita dezenas de consultas repetidas ao banco)
+    # Organiza os dados em memória (evita consultas repetidas ao banco dentro do loop)
     for disc in labels_disciplinas:
         b1 = next(
             (b for b in boletins if b.disciplina.nome == disc and b.bimestre == 1), None
@@ -55,6 +67,8 @@ def dashboard_aluno(request, aluno_id):
         "notas_b1": json.dumps(notas_b1),
         "notas_b2": json.dumps(notas_b2),
         "engajamento": json.dumps(engajamento),
+        "aluno_anterior_id": aluno_anterior.id if aluno_anterior else None,
+        "aluno_proximo_id": aluno_proximo.id if aluno_proximo else None,
     }
     return render(request, "escola/dashboard.html", context)
 
@@ -69,25 +83,32 @@ def painel_professor(request):
 
 def dashboard_macro_turma(request):
     """
-    Refatorado de forma dinâmica. Agrupa boletins por disciplina e gera
-    as médias gerais em tempo real direto dos dados do Mapão da SED.
+    Agrupa os boletins por disciplina e gera as médias em tempo real,
+    capturando dinamicamente o referer para voltar à ficha do aluno correta.
     """
-    # 1. Carrega os resultados do SARESP previamente para evitar consultas N+1
     resultados_saresp = list(SarespResultado.objects.all())
     tabela_performance = []
 
-    # 2. Agregação dinâmica: Calcula médias de notas por bimestre e soma as faltas de toda a turma
+    # 🎯 CAPTURA DINÂMICA DO REFERER (Origem da navegação)
+    # Se veio de um diagnóstico (ex: /alunos/diagnostico/30/), ele guarda essa URL exata.
+    url_anterior = request.META.get("HTTP_REFERER", "")
+
+    if "alunos/diagnostico/" in url_anterior:
+        url_retorno = url_anterior
+    else:
+        # Fallback de segurança caso acesse a visão macro diretamente sem vir de um aluno
+        url_retorno = "/alunos/diagnostico/30/"
+
+    # Agregação dinâmica direta via banco de dados
     dados_agregados = BoletimBimestral.objects.values("disciplina__nome").annotate(
         media_1b=Avg("nota", filter=Q(bimestre=1)),
         media_2b=Avg("nota", filter=Q(bimestre=2)),
         total_faltas=Sum("faltas"),
     )
 
-    # 3. Faz o cruzamento inteligente com a planilha do SARESP populada via Excel
     for item in dados_agregados:
         nome_disciplina = item["disciplina__nome"]
 
-        # Faz a busca em memória do benchmark do estado
         referencia_saresp = next(
             (
                 r
@@ -99,7 +120,7 @@ def dashboard_macro_turma(request):
 
         media_estado = referencia_saresp.media_estado if referencia_saresp else 6.0
         media_2b = round(item["media_2b"], 2) if item["media_2b"] else 0.0
-        desvio = round(media_2b - media_estado, 2)
+        desvío = round(media_2b - media_estado, 2)
 
         tabela_performance.append(
             {
@@ -108,10 +129,10 @@ def dashboard_macro_turma(request):
                 "media_2b": media_2b,
                 "total_faltas": item["total_faltas"] or 0,
                 "media_estado_saresp": media_estado,
-                "desvio_estratetigo": desvio,
+                "desvio_estratetigo": desvío,
                 "status": (
                     "🟢 Acima da Média Estadual"
-                    if desvio >= 0
+                    if desvío >= 0
                     else "🔴 Defasagem Curricular"
                 ),
             }
@@ -124,22 +145,24 @@ def dashboard_macro_turma(request):
     context = {
         "tabela_performance": tabela_performance,
         "intervencoes_ativas": intervencoes_ativas,
+        "url_retorno": url_retorno,  # 🌟 Enviando para o HTML
     }
     return render(request, "escola/dashboard_macro.html", context)
 
 
 @api_view(["GET"])
 def buscar_radar_aluno(request, aluno_id):
+    """API que alimenta o Gráfico Radar de competências."""
     componentes = ["LÓGICA", "METODOLOGIAS ÁGEIS", "CARREIRA", "REDES"]
 
-    # Otimização: Traz as métricas filtrando apenas o que é estritamente necessário
+    # CORREÇÃO: Como disciplina é uma ForeignKey, acessamos o nome usando o lookahead '__nome__iexact__in'
     metricas = MetricaDesempenho.objects.filter(
-        aluno_id=aluno_id, disciplina__iexact__in=componentes
-    )
+        aluno_id=aluno_id, disciplina__nome__iexact__in=componentes
+    ).select_related("disciplina")
 
     dados_grafico = {comp: 0.0 for comp in componentes}
     for m in metricas:
-        nome_comp = m.disciplina.upper()
+        nome_comp = m.disciplina.nome.upper()
         if nome_comp in dados_grafico:
             dados_grafico[nome_comp] = float(m.nota)
 

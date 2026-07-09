@@ -6,7 +6,6 @@
     <title>EduAnalytica • Visão Macro da Turma</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Desativa o aviso de CDN em desenvolvimento do Tailwind
       tailwind.config = {
         production: true,
       };
@@ -39,10 +38,10 @@
       </div>
       <div>
         <a
-          href="/"
+          href="{{ url_retorno }}"
           class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm text-gray-300 font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap"
         >
-          ← Voltar para Lista
+          ← Voltar para Ficha do Aluno
         </a>
       </div>
     </header>

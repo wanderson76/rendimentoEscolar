@@ -70,9 +70,40 @@
               >
             </p>
           </div>
+
+          <div class="flex items-center gap-2 mt-4">
+            {% if aluno_anterior_id %}
+            <a
+              href="{% url 'escola:dashboard_aluno' aluno_anterior_id %}"
+              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-gray-300 font-medium rounded border border-slate-700 transition-colors"
+            >
+              ⏮️ Anterior
+            </a>
+            {% else %}
+            <span
+              class="px-3 py-1.5 bg-slate-900 text-xs text-gray-600 rounded border border-slate-800 cursor-not-allowed"
+            >
+              ⏮️ Primeiro
+            </span>
+            {% endif %} {% if aluno_proximo_id %}
+            <a
+              href="{% url 'escola:dashboard_aluno' aluno_proximo_id %}"
+              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-gray-300 font-medium rounded border border-slate-700 transition-colors"
+            >
+              Próximo ⏭️
+            </a>
+            {% else %}
+            <span
+              class="px-3 py-1.5 bg-slate-900 text-xs text-gray-600 rounded border border-slate-800 cursor-not-allowed"
+            >
+              Último ⏭️
+            </span>
+            {% endif %}
+          </div>
         </div>
+
         <a
-          href="/admin/escola/aluno/"
+          href="{% url 'alunos:painel_extremos' %}"
           class="text-sm bg-slate-800 hover:bg-slate-700 text-gray-300 px-4 py-2 rounded-lg transition-colors border border-slate-700 whitespace-nowrap"
         >
           ← Voltar para Lista
@@ -173,7 +204,6 @@
       });
     </script>
     <script>
-      // Isso desativa o aviso chato no console local
       tailwind.config = {
         production: true,
       };

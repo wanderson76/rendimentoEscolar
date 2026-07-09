@@ -43,12 +43,17 @@ class BoletimBimestral(models.Model):
                 name="unique_boletim_aluno_disciplina_bimestre",
             )
         ]
-        # INTERVENÇÃO DE PERFORMANCE NO POSTGRESQL
+        # INTERVENÇÃO AVANÇADA DE PERFORMANCE NO POSTGRESQL
         indexes = [
-            # Turbina buscas micro de boletins de um aluno específico
+            # 1. Cobre perfeitamente buscas individuais do painel do aluno
             models.Index(fields=["aluno", "disciplina", "bimestre"]),
-            # Turbina agregações dinâmicas macro (Média de notas e soma de faltas por matéria)
-            models.Index(fields=["disciplina", "bimestre"]),
+            # 2. ÍNDICE COMPOSTO COBERTOR: Desenhado sob medida para a nossa Window Function.
+            # Ele fornece ao Postgres os dados na ordem exata do PARTITION BY + ORDER BY,
+            # eliminando o custo do 'Sort Method: quicksort' detectado no benchmark anterior!
+            models.Index(
+                fields=["disciplina", "bimestre", "nota"],
+                name="idx_boletim_window_perf",
+            ),
         ]
 
     def __str__(self):
@@ -155,8 +160,8 @@ class MetricaDesempenho(models.Model):
             )
         ]
         indexes = [
-            # Otimiza o filtro .filter(disciplina__iexact=...) do gráfico radar
-            models.Index(fields=["disciplina"]),
+            # Otimiza o cruzamento de tabelas (JOIN) e filtros pelo ID da disciplina
+            models.Index(fields=["disciplina_id"]),
         ]
 
     def __str__(self):

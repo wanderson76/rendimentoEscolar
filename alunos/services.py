@@ -86,3 +86,32 @@ def obter_piores_10_alunos():
         cursor.execute(query)
         colunas = [col[0] for col in cursor.description]
         return [dict(zip(colunas, row)) for row in cursor.fetchall()]
+
+
+# Adicione ao final de alunos/services.py
+
+
+def obter_dados_comparativos(aluno_a_id, aluno_b_id=None):
+    """
+    Retorna as médias por disciplina de dois alunos para cruzamento no Gráfico Radar.
+    """
+    query = """
+        SELECT 
+            b.aluno_id,
+            a.nome AS aluno_nome,
+            d.nome AS disciplina,
+            ROUND(AVG(b.nota)::numeric, 1) AS media_disciplina
+        FROM escola_boletimbimestral b
+        JOIN escola_aluno a ON b.aluno_id = a.id
+        JOIN school_disciplina d ON b.disciplina_id = d.id
+        WHERE b.aluno_id IN (%s, %s)
+        GROUP BY b.aluno_id, a.nome, d.nome
+        ORDER BY d.nome;
+    """
+    # Se não houver segundo aluno para comparar, passamos o primeiro ID duas vezes para não quebrar o IN
+    aluno_b_id = aluno_b_id or aluno_a_id
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, [aluno_a_id, aluno_b_id])
+        colunas = [col[0] for col in cursor.description]
+        return [dict(zip(colunas, row)) for row in cursor.fetchall()]

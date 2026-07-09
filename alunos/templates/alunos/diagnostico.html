@@ -44,10 +44,42 @@
           Ficha clínica individual para tomada de decisão e plano de
           acompanhamento pedagógico.
         </p>
+
+        <!-- ⏮️ 1. CONTROLES DE PAGINAÇÃO SEQUENCIAL DE ESTUDANTES -->
+        <div class="flex items-center gap-2 mt-4">
+          {% if aluno_anterior_id %}
+          <a
+            href="{% url 'alunos:diagnostico_individual' aluno_anterior_id %}"
+            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-gray-300 font-medium rounded border border-slate-700 transition-colors"
+          >
+            ⏮️ Anterior
+          </a>
+          {% else %}
+          <span
+            class="px-3 py-1.5 bg-slate-900 text-xs text-gray-600 rounded border border-slate-800 cursor-not-allowed"
+          >
+            ⏮️ Primeiro Aluno
+          </span>
+          {% endif %} {% if aluno_proximo_id %}
+          <a
+            href="{% url 'alunos:diagnostico_individual' aluno_proximo_id %}"
+            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-gray-300 font-medium rounded border border-slate-700 transition-colors"
+          >
+            Próximo ⏭️
+          </a>
+          {% else %}
+          <span
+            class="px-3 py-1.5 bg-slate-900 text-xs text-gray-600 rounded border border-slate-800 cursor-not-allowed"
+          >
+            Último Aluno ⏭️
+          </span>
+          {% endif %}
+        </div>
       </div>
       <div>
+        <!-- 🎯 2. DIRECIONAMENTO INTELIGENTE PARA A VISÃO MACRO -->
         <a
-          href="/dashboard/macro/"
+          href="{% url 'escola:dashboard_macro' %}"
           class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm text-gray-300 font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap"
         >
           ← Voltar para Visão Macro
