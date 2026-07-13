@@ -26,7 +26,7 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = ["*"]
 
 # 🔒 Configurações extras de proxy seguro para produção no Railway
-if not DEBUG:
+if os.environ.get("DATABASE_URL"):
     CSRF_TRUSTED_ORIGINS = [
         "https://rendimentoescolar-production.up.railway.app",
         "https://*.up.railway.app",
