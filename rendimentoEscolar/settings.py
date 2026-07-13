@@ -21,10 +21,16 @@ SECRET_KEY = os.environ.get(
 )
 
 # 🛡️ SECURITY WARNING: don't run with debug turned on in production!
-# No Railway, basta adicionar a variável DEBUG=False. Localmente, roda como True.
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["*"]
+
+# 🔒 Configurações extras de proxy seguro para produção no Railway
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = [
+        "https://rendimentoescolar-production.up.railway.app",
+    ]
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -57,7 +63,9 @@ ROOT_URLCONF = "rendimentoEscolar.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            BASE_DIR / "templates"
+        ],  # Garante que a pasta raiz de templates seja localizada se houver
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -73,8 +81,6 @@ WSGI_APPLICATION = "rendimentoEscolar.wsgi.application"
 
 
 # 📊 Database Híbrido (Local vs Produção)
-# Se a variável DATABASE_URL estiver presente (Railway), ele se conecta a ela de forma automática.
-# Caso contrário, usa as configurações do seu PostgreSQL local na porta 5434.
 if os.environ.get("DATABASE_URL"):
     DATABASES = {
         "default": dj_database_url.config(
@@ -133,11 +139,17 @@ STATIC_URL = "static/"
 
 # Caminhos para compressão do WhiteNoise em produção
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 
 # 🚀 Configurações do Celery e Broker Assíncrono
-# Dinamiza a URL do Redis caso o Railway mude o host em produção
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
