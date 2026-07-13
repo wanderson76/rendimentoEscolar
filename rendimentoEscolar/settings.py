@@ -29,6 +29,7 @@ ALLOWED_HOSTS = ["*"]
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS = [
         "https://rendimentoescolar-production.up.railway.app",
+        "https://*.up.railway.app",
     ]
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
